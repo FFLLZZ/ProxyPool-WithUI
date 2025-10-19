@@ -44,13 +44,140 @@ python main.py
 
 ### 方式二：Docker 运行
 
+#### 快速开始
+
+**临时运行（数据不持久化）**
 ```bash
 docker run -d \
+  --name proxy-pool \
   -p 5000:5000 \
-  --name proxy_pool \
-  ghcr.io/huppugo1/proxypoolwithui:latest
-
+  private-proxypool-server:latest
 ```
+> ⚠️ **注意**: 容器删除后数据会丢失，仅适用于测试
+
+**持久化运行（推荐）**
+```bash
+docker run -d \
+  --name proxy-pool \
+  -p 5000:5000 \
+  -v $(pwd)/data:/proxy/data \
+  private-proxypool-server:latest
+```
+
+#### 数据持久化配置
+
+**1. 使用绝对路径（推荐）**
+```bash
+# 创建数据目录
+mkdir -p /home/yourusername/proxy-data
+
+# 运行容器
+docker run -d \
+  --name proxy-pool \
+  -p 5000:5000 \
+  -v /home/yourusername/proxy-data:/proxy/data \
+  private-proxypool-server:latest
+```
+> ✅ **优势**: 路径明确，便于管理和备份
+
+**2. 使用相对路径**
+```bash
+# 进入项目目录
+cd /path/to/your/project
+
+# 创建数据目录
+mkdir -p ./data
+
+# 运行容器
+docker run -d \
+  --name proxy-pool \
+  -p 5000:5000 \
+  -v ./data:/proxy/data \
+  private-proxypool-server:latest
+```
+> ✅ **优势**: 便于项目迁移，路径相对简单
+
+**3. 使用Docker命名卷**
+```bash
+docker run -d \
+  --name proxy-pool \
+  -p 5000:5000 \
+  -v proxy-data:/proxy/data \
+  private-proxypool-server:latest
+```
+> ✅ **优势**: Docker自动管理，适合生产环境
+
+#### 完整部署示例
+
+```bash
+# 1. 创建数据目录
+mkdir -p ./data
+
+# 2. 运行容器（生产环境配置）
+docker run -d \
+  --name proxy-pool \
+  -p 5000:5000 \
+  -v $(pwd)/data:/proxy/data \
+  --restart unless-stopped \
+  --memory=512m \
+  --cpus=1.0 \
+  private-proxypool-server:latest
+
+# 3. 验证部署
+echo "等待服务启动..."
+sleep 10
+
+# 检查容器状态
+docker ps | grep proxy-pool
+
+# 查看数据目录
+ls -la ./data/
+
+# 查看服务日志
+docker logs -f proxy-pool
+
+# 测试API接口
+curl http://localhost:5000/api/proxies
+```
+
+#### 常用管理命令
+
+```bash
+# 查看容器状态
+docker ps -a | grep proxy-pool
+
+# 查看实时日志
+docker logs -f proxy-pool
+
+# 停止容器
+docker stop proxy-pool
+
+# 启动容器
+docker start proxy-pool
+
+# 重启容器
+docker restart proxy-pool
+
+# 删除容器（保留数据）
+docker rm proxy-pool
+
+# 删除容器和数据
+docker rm -v proxy-pool
+```
+
+#### 数据备份与恢复
+
+```bash
+# 备份数据
+tar -czf proxy-data-backup-$(date +%Y%m%d).tar.gz ./data/
+
+# 恢复数据
+tar -xzf proxy-data-backup-20240101.tar.gz
+
+# 迁移到新服务器
+scp -r ./data/ user@new-server:/path/to/new/location/
+```
+
 国内用户可将镜像名替换为 `ghcr.nju.edu.cn/huppugo1/proxypoolwithui:latest`
 
 启动成功后访问：**http://localhost:5000/web**

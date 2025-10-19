@@ -31,8 +31,12 @@ env/
 *.db-shm
 *.db-wal
 
-# User data (sensitive)
-users.json
+# Data directory (contains sensitive files)
+data/
+!data/.gitkeep
+
+# User data (sensitive) - moved to data/
+# users.json
 
 # IDE
 .vscode/
