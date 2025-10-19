@@ -2,9 +2,11 @@ FROM python:3.7.0
 
 WORKDIR /proxy
 
-ADD requirements.txt /proxy
-RUN pip3 config set global.index-url https://mirrors.aliyun.com/pypi/simple/
-RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
+COPY requirements.txt .
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ \
+ && pip install -U pip --no-cache-dir \
+ && pip install --no-cache-dir -r requirements.txt
+COPY . .
 
+EXPOSE 5000
 CMD ["python", "main.py"]
