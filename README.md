@@ -37,16 +37,13 @@ python main.py
 ### 方式二：Docker 运行
 
 ```bash
-# 1. 克隆项目
-git clone https://github.com/huppugo1/ProxyPoolWithUI.git
-cd ProxyPoolWithUI
+docker run -d \
+  -p 5000:5000 \
+  --name proxy_pool \
+  ghcr.io/huppugo1/proxypoolwithui:latest
 
-# 2. 构建镜像
-docker build --tag proxy_pool .
-
-# 3. 运行容器
-docker run -p 5000:5000 -v $(pwd):/proxy -d proxy_pool
 ```
+国内用户可将镜像名替换为 ghcr.nju.edu.cn/huppugo1/proxypoolwithui:latest
 
 启动成功后访问：**http://localhost:5000/web**
 
