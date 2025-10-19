@@ -29,12 +29,6 @@
           <h1 class="title">代理池管理系统</h1>
         </div>
         <p class="subtitle">ProxyPool Management System</p>
-        <div class="status-indicator">
-          <span class="status-text">
-            {{ isOnline ? '系统运行正常' : '正在连接服务器...' }}
-          </span>
-          <span class="status-icon">{{ isOnline ? '✓' : '⏳' }}</span>
-        </div>
       </div>
       
       <a-form
@@ -119,9 +113,7 @@
       <div class="copyright-content">
         <span>© 2025 ProxyPool Management System</span>
         <div class="social-links">
-          <a href="#" class="social-link">GitHub</a>
-          <a href="#" class="social-link">文档</a>
-          <a href="#" class="social-link">支持</a>
+          <a href="https://github.com/huppugo1/ProxyPoolWithUI" class="social-link">GitHub</a>
         </div>
       </div>
     </div>
@@ -162,7 +154,6 @@ const formState = reactive({
 
 const loading = ref(false)
 const loginError = ref(false)
-const isOnline = ref(true)
 const inputFocused = ref(false)
 
 const rules = {
@@ -215,15 +206,6 @@ const showForgotPassword = () => {
   })
 }
 
-// 检查系统状态
-const checkSystemStatus = async () => {
-  try {
-    const response = await $http.get('/auth/ping')
-    isOnline.value = response.success
-  } catch (error) {
-    isOnline.value = false
-  }
-}
 
 const handleLogin = async () => {
   loading.value = true
@@ -283,12 +265,6 @@ onMounted(() => {
     // 已登录，跳转到首页
     router.push('/')
   }
-  
-  // 检查系统状态
-  checkSystemStatus()
-  
-  // 定期检查系统状态
-  setInterval(checkSystemStatus, 30000)
 })
 </script>
 
@@ -586,58 +562,6 @@ onMounted(() => {
   text-transform: uppercase;
 }
 
-/* 状态指示器 */
-.status-indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-  font-size: 12px;
-}
-
-.status-indicator:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
-}
-
-.status-text {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.7);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.status-icon {
-  font-size: 12px;
-  font-weight: bold;
-  color: #52c41a;
-  animation: statusIconBounce 2s ease-in-out infinite;
-}
-
-.status-dot:not(.online) + .status-text .status-icon {
-  color: #ff4d4f;
-  animation: statusIconSpin 1s linear infinite;
-}
-
-@keyframes statusIconBounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-@keyframes statusIconSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 
 .login-form {
   margin-top: 35px;

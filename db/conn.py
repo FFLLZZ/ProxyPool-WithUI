@@ -4,7 +4,7 @@
 封装的数据库接口
 """
 
-from config import DATABASE_PATH
+from data.config import DATABASE_PATH
 from .Proxy import Proxy
 from .Fetcher import Fetcher
 import sqlite3

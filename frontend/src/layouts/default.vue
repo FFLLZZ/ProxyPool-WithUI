@@ -23,11 +23,20 @@
             <transition name="fade">
               <div v-if="!collapsed" class="logo-info">
                 <div class="info-item">
-                  <span class="status-indicator online"></span>
-                  <span>系统运行中</span>
+                  <span 
+                    class="status-indicator" 
+                    :class="{
+                      'online': backendStatus === 'online',
+                      'offline': backendStatus === 'offline',
+                      'checking': backendStatus === 'checking'
+                    }"
+                  ></span>
+                  <span v-if="backendStatus === 'checking'">检测中...</span>
+                  <span v-else-if="backendStatus === 'online'">系统运行中</span>
+                  <span v-else>系统离线</span>
                 </div>
                 <div class="info-item version-info">
-                  v2.0.1 | Nuxt 3
+                  v2.0.2 | Nuxt 3
                 </div>
               </div>
             </transition>
@@ -66,6 +75,14 @@
                 />
               </NuxtLink>
             </a-menu-item>
+
+            <a-menu-item key="/subscriptions" class="menu-item">
+              <NuxtLink to="/subscriptions" class="menu-link">
+                <LinkOutlined class="menu-icon" />
+                <span class="menu-text">订阅管理</span>
+              </NuxtLink>
+            </a-menu-item>
+
 
             <a-menu-divider />
 
@@ -124,6 +141,22 @@
                     <FullscreenExitOutlined v-else />
                   </a-button>
                 </a-tooltip>
+                
+                 <a-tooltip :title="themeLabel">
+                   <a-button 
+                     type="text" 
+                     @click="enhancedToggleTheme" 
+                     class="theme-toggle"
+                     :class="{ switching: isThemeSwitching }"
+                     :data-theme="themeMode"
+                   >
+                     <div class="theme-icon-wrapper">
+                       <BulbOutlined v-if="themeIcon === 'SunOutlined'" />
+                       <StarOutlined v-else />
+                       <div class="theme-status-dot"></div>
+                     </div>
+                   </a-button>
+                 </a-tooltip>
                 
                 <a-divider type="vertical" />
                 
@@ -249,6 +282,7 @@ import {
   UnorderedListOutlined,
   RobotOutlined,
   ApiOutlined,
+  LinkOutlined,
   GithubOutlined,
   ExportOutlined,
   MenuUnfoldOutlined,
@@ -260,10 +294,14 @@ import {
   UserOutlined,
   DownOutlined,
   LogoutOutlined,
-  KeyOutlined
+  KeyOutlined,
+  BulbOutlined,
+  StarOutlined
 } from '@ant-design/icons-vue'
 import moment from 'moment'
 import { message, Modal } from 'ant-design-vue'
+import { useTheme } from '~/composables/useTheme'
+import { useBackendStatus } from '~/composables/useBackendStatus'
 
 moment.locale('zh-cn')
 
@@ -272,6 +310,28 @@ const route = useRoute()
 const router = useRouter()
 // @ts-ignore
 const { $http } = useNuxtApp()
+
+// 主题管理
+const { themeMode, isDark, themeIcon, themeLabel, loadTheme, toggleTheme, watchSystemTheme } = useTheme()
+
+// 后端连接状态管理
+const { backendStatus, backendError, checkBackendStatus, startPeriodicCheck, stopPeriodicCheck } = useBackendStatus()
+
+// 后端状态检测现在由 useBackendStatus composable 提供
+
+// 主题切换动画状态
+const isThemeSwitching = ref(false)
+
+// 增强的主题切换函数
+const enhancedToggleTheme = () => {
+  isThemeSwitching.value = true
+  toggleTheme()
+  
+  // 动画完成后重置状态
+  setTimeout(() => {
+    isThemeSwitching.value = false
+  }, 600)
+}
 
 const collapsed = ref(false)
 const urlPath = ref<string[]>([])
@@ -293,7 +353,8 @@ const pageTitle = computed(() => {
   const titleMap: Record<string, string> = {
     '/': '可用代理列表',
     '/fetchers': '爬取器状态监控',
-    '/api': 'API 接口文档'
+    '/api': 'API 接口文档',
+    '/subscriptions': '订阅链接管理'
   }
   return titleMap[route.path] || '代理池管理'
 })
@@ -325,7 +386,7 @@ const toggleFullscreen = () => {
 }
 
 // 监听全屏变化
-if (process.client) {
+if (typeof window !== 'undefined') {
   document.addEventListener('fullscreenchange', () => {
     isFullscreen.value = !!document.fullscreenElement
   })
@@ -415,7 +476,7 @@ const resetPasswordForm = () => {
 
 // 加载用户信息
 const loadUserInfo = () => {
-  if (process.client) {
+  if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token')
     // 如果没有token，不加载用户信息
     if (!token) {
@@ -442,6 +503,18 @@ watch(() => route.path, updateNav)
 onMounted(() => {
   updateNav()
   loadUserInfo()
+  loadTheme()
+  watchSystemTheme()
+  
+  // 获取API基础URL并启动定期状态检测
+  const config = useRuntimeConfig()
+  const baseURL = config.public.apiBase as string
+  startPeriodicCheck(5, baseURL)
+})
+
+onUnmounted(() => {
+  // 清理定时器
+  stopPeriodicCheck()
 })
 </script>
 
@@ -459,7 +532,21 @@ onMounted(() => {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   position: relative;
   z-index: 10;
+  transition: all var(--transition-normal);
 }
+
+/* 浅色模式侧边栏 */
+.light .layout-sider {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 深色模式侧边栏 */
+.dark .layout-sider {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.4);
+}
+
 
 .layout-sider :deep(.ant-layout-sider-children) {
   display: flex;
@@ -470,6 +557,12 @@ onMounted(() => {
 .logo-container {
   padding: 16px;
   margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-normal);
+}
+
+/* 深色模式Logo区域 */
+.dark .logo-container {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -529,6 +622,26 @@ onMounted(() => {
 .nav-menu {
   flex: 1;
   border-right: none;
+  transition: all var(--transition-normal);
+}
+
+/* 深色模式菜单 */
+.dark .nav-menu :deep(.ant-menu-dark) {
+  background: #001529;
+}
+
+.dark .nav-menu :deep(.ant-menu-item) {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dark .nav-menu :deep(.ant-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.dark .nav-menu :deep(.ant-menu-item-selected) {
+  background: #1890ff;
+  color: #fff;
 }
 
 .nav-menu :deep(.ant-menu-item) {
@@ -579,16 +692,62 @@ onMounted(() => {
 
 /* 顶部栏 */
 .layout-header {
-  background: #fff;
+  background: var(--bg-secondary);
   padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--box-shadow);
   position: sticky;
   top: 0;
   z-index: 9;
+  transition: all var(--transition-normal);
 }
+
+/* 浅色模式顶部栏 */
+.light .layout-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* 深色模式顶部栏 */
+.dark .layout-header {
+  background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 深色模式强制覆盖 Ant Design Layout 样式 */
+.dark .ant-layout {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-content {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-sider {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-header {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 深色模式覆盖 Ant Design 的 CSS 变量 */
+.dark {
+  --ant-layout-bg: var(--bg-primary) !important;
+  --ant-layout-sider-bg: var(--bg-secondary) !important;
+  --ant-layout-header-bg: var(--bg-secondary) !important;
+  --ant-layout-content-bg: var(--bg-primary) !important;
+  --ant-layout-footer-bg: var(--bg-secondary) !important;
+}
+
 
 .header-left {
   display: flex;
@@ -611,16 +770,34 @@ onMounted(() => {
   font-size: 14px;
 }
 
+.header-breadcrumb :deep(.ant-breadcrumb-link) {
+  color: var(--text-primary);
+  transition: color var(--transition-normal);
+}
+
+.header-breadcrumb :deep(.ant-breadcrumb-separator) {
+  color: var(--text-secondary);
+}
+
 .header-right :deep(.ant-btn) {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text-secondary);
+  transition: all var(--transition-normal);
+}
+
+.header-right :deep(.ant-btn:hover) {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.05);
 }
 
 /* 内容区 */
 .layout-content {
   margin: 24px;
   min-height: calc(100vh - 184px);
+  background: var(--bg-primary);
+  transition: all var(--transition-normal);
 }
 
 .content-wrapper {
@@ -629,9 +806,10 @@ onMounted(() => {
 
 /* 页脚 */
 .layout-footer {
-  background: #fff;
+  background: var(--bg-secondary);
   padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border-color);
+  transition: all var(--transition-normal);
 }
 
 .footer-content {
@@ -648,21 +826,266 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--text-secondary);
+  transition: color var(--transition-normal);
 }
 
 .footer-right a {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--text-secondary);
   text-decoration: none;
-  transition: color 0.3s;
+  transition: color var(--transition-normal);
 }
 
 .footer-right a:hover {
   color: #1890ff;
 }
+
+/* 主题切换按钮 */
+.theme-toggle {
+  position: relative;
+  transition: all var(--transition-normal);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid transparent;
+}
+
+/* 主题切换按钮的渐变背景 */
+.theme-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  pointer-events: none;
+}
+
+.theme-toggle:hover::before {
+  opacity: 1;
+}
+
+/* 主题切换按钮的波纹效果 */
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  pointer-events: none;
+}
+
+.theme-toggle:active::after {
+  width: 100px;
+  height: 100px;
+}
+
+.theme-toggle:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+/* 主题图标包装器 */
+.theme-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 主题切换按钮图标动画 */
+.theme-toggle :deep(.anticon) {
+  transition: all var(--transition-normal);
+  font-size: 16px;
+  position: relative;
+}
+
+.theme-toggle:hover :deep(.anticon) {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* 主题状态指示点 */
+.theme-status-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-secondary);
+  transition: all var(--transition-normal);
+}
+
+/* 不同主题的状态指示点颜色 */
+.theme-toggle[data-theme="light"] .theme-status-dot {
+  background: #faad14;
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.3);
+}
+
+.theme-toggle[data-theme="dark"] .theme-status-dot {
+  background: #722ed1;
+  box-shadow: 0 0 0 2px rgba(114, 46, 209, 0.3);
+}
+
+
+/* 深色模式下的状态指示点 */
+.dark .theme-toggle[data-theme="light"] .theme-status-dot {
+  background: #faad14;
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.4);
+}
+
+.dark .theme-toggle[data-theme="dark"] .theme-status-dot {
+  background: #9254de;
+  box-shadow: 0 0 0 2px rgba(146, 84, 222, 0.4);
+}
+
+
+/* 主题切换时的旋转动画 */
+.theme-toggle :deep(.anticon) {
+  animation: none;
+}
+
+.theme-toggle.switching :deep(.anticon) {
+  animation: themeSwitch 0.6s ease-in-out;
+}
+
+@keyframes themeSwitch {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.8) rotate(180deg);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+/* 主题切换按钮的脉冲效果 */
+.theme-toggle[data-theme="light"] :deep(.anticon) {
+  animation: lightPulse 2s ease-in-out infinite;
+}
+
+.theme-toggle[data-theme="dark"] :deep(.anticon) {
+  animation: darkPulse 2s ease-in-out infinite;
+}
+
+
+@keyframes lightPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(250, 173, 20, 0);
+  }
+}
+
+@keyframes darkPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(114, 46, 209, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(114, 46, 209, 0);
+  }
+}
+
+
+/* 浅色模式样式 */
+.theme-toggle[data-theme="light"] {
+  color: #faad14;
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.1), rgba(255, 193, 7, 0.05));
+  border-color: rgba(250, 173, 20, 0.3);
+  box-shadow: 0 0 0 1px rgba(250, 173, 20, 0.1);
+}
+
+.theme-toggle[data-theme="light"]:hover {
+  color: #faad14;
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.15), rgba(255, 193, 7, 0.1));
+  border-color: rgba(250, 173, 20, 0.5);
+  box-shadow: 0 4px 12px rgba(250, 173, 20, 0.2), 0 0 0 1px rgba(250, 173, 20, 0.2);
+}
+
+/* 深色模式样式 */
+.theme-toggle[data-theme="dark"] {
+  color: #722ed1;
+  background: linear-gradient(135deg, rgba(114, 46, 209, 0.1), rgba(75, 0, 130, 0.05));
+  border-color: rgba(114, 46, 209, 0.3);
+  box-shadow: 0 0 0 1px rgba(114, 46, 209, 0.1);
+}
+
+.theme-toggle[data-theme="dark"]:hover {
+  color: #722ed1;
+  background: linear-gradient(135deg, rgba(114, 46, 209, 0.15), rgba(75, 0, 130, 0.1));
+  border-color: rgba(114, 46, 209, 0.5);
+  box-shadow: 0 4px 12px rgba(114, 46, 209, 0.2), 0 0 0 1px rgba(114, 46, 209, 0.2);
+}
+
+
+/* 深色模式下的主题切换按钮 */
+.dark .theme-toggle {
+  color: var(--text-secondary);
+}
+
+.dark .theme-toggle:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
+}
+
+/* 深色模式下的主题状态样式 */
+.dark .theme-toggle[data-theme="light"] {
+  color: #faad14;
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.15), rgba(255, 193, 7, 0.08));
+  border-color: rgba(250, 173, 20, 0.4);
+  box-shadow: 0 0 0 1px rgba(250, 173, 20, 0.2);
+}
+
+.dark .theme-toggle[data-theme="light"]:hover {
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.2), rgba(255, 193, 7, 0.12));
+  border-color: rgba(250, 173, 20, 0.6);
+  box-shadow: 0 4px 12px rgba(250, 173, 20, 0.3), 0 0 0 1px rgba(250, 173, 20, 0.3);
+}
+
+.dark .theme-toggle[data-theme="dark"] {
+  color: #9254de;
+  background: linear-gradient(135deg, rgba(146, 84, 222, 0.15), rgba(75, 0, 130, 0.08));
+  border-color: rgba(146, 84, 222, 0.4);
+  box-shadow: 0 0 0 1px rgba(146, 84, 222, 0.2);
+}
+
+.dark .theme-toggle[data-theme="dark"]:hover {
+  background: linear-gradient(135deg, rgba(146, 84, 222, 0.2), rgba(75, 0, 130, 0.12));
+  border-color: rgba(146, 84, 222, 0.6);
+  box-shadow: 0 4px 12px rgba(146, 84, 222, 0.3), 0 0 0 1px rgba(146, 84, 222, 0.3);
+}
+
 
 /* 用户下拉菜单 */
 .user-dropdown {
@@ -670,9 +1093,9 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 4px 12px;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--text-primary);
   font-size: 14px;
-  transition: all 0.3s;
+  transition: all var(--transition-normal);
 }
 
 .user-dropdown:hover {
@@ -718,5 +1141,56 @@ onMounted(() => {
     flex-direction: column;
     text-align: center;
   }
+}
+
+/* 菜单栏状态指示器样式 */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-indicator.online {
+  background: #52c41a;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.3);
+}
+
+.status-indicator.offline {
+  background: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.3);
+}
+
+.status-indicator.checking {
+  background: #faad14;
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.3);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* 深色模式菜单栏状态指示器 */
+.dark .status-indicator.online {
+  background: #52c41a;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.3);
+}
+
+.dark .status-indicator.offline {
+  background: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.3);
+}
+
+.dark .status-indicator.checking {
+  background: #faad14;
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.3);
 }
 </style>

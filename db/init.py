@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-from config import DATABASE_PATH
+from data.config import DATABASE_PATH
 from .Proxy import Proxy
 from .Fetcher import Fetcher
 from fetchers import fetchers

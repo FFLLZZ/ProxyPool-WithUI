@@ -7,6 +7,7 @@ import os
 import json
 from functools import wraps
 from flask import request, jsonify
+from data.config import USERS_FILE
 
 class AuthManager:
     """
@@ -21,7 +22,7 @@ class AuthManager:
         """
         self.secret_key = secret_key
         self.token_expiration_hours = token_expiration_hours
-        self.users_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'users.json')
+        self.users_file = USERS_FILE
         self._init_users_file()
     
     def _init_users_file(self):
@@ -213,7 +214,7 @@ def token_required(f):
             token = token[7:]
         
         # 验证token
-        from config import auth_manager
+        from data.config import auth_manager
         payload = auth_manager.verify_token(token)
         
         if not payload:

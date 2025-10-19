@@ -40,6 +40,55 @@
   }
 }
 
+/* 深色模式类名支持 */
+.dark {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-card: #3a3a3a;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-disabled: #a0a0a0;
+  
+  --border-color: #4a4a4a;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --box-shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3);
+  
+  /* 深色模式特殊效果 */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --accent-color: #8b5cf6;
+  --accent-light: rgba(139, 92, 246, 0.2);
+  
+  /* 深色模式背景纹理 */
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.05) 0%, transparent 50%);
+}
+
+/* 浅色模式类名支持 */
+.light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  
+  --text-primary: rgba(15, 23, 42, 0.9);
+  --text-secondary: rgba(71, 85, 105, 0.8);
+  --text-disabled: rgba(148, 163, 184, 0.6);
+  
+  --border-color: #e2e8f0;
+  --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --box-shadow-hover: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  
+  /* 浅色模式特殊效果 */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --accent-color: #3b82f6;
+  --accent-light: rgba(59, 130, 246, 0.1);
+}
+
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -82,6 +131,15 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #999;
+}
+
+/* 深色模式滚动条 */
+.dark ::-webkit-scrollbar-thumb {
+  background: #434343;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #595959;
 }
 
 /* 选中文本样式 */
@@ -186,6 +244,7 @@ body {
   box-shadow: var(--box-shadow);
   transition: all var(--transition-normal);
   overflow: hidden;
+  position: relative;
 }
 
 .enhanced-card:hover {
@@ -193,11 +252,49 @@ body {
   transform: translateY(-2px);
 }
 
+/* 浅色模式卡片效果 */
+.light .enhanced-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border-color);
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.light .enhanced-card:hover {
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.07),
+    0 2px 4px rgba(0, 0, 0, 0.06),
+    0 0 0 1px var(--accent-color);
+  transform: translateY(-4px);
+}
+
+/* 深色模式卡片效果 */
+.dark .enhanced-card {
+  background: linear-gradient(145deg, #3a3a3a 0%, #2d2d2d 100%);
+  border: 1px solid var(--border-color);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dark .enhanced-card:hover {
+  box-shadow: 
+    0 10px 15px rgba(0, 0, 0, 0.4),
+    0 4px 6px rgba(0, 0, 0, 0.3),
+    0 0 0 1px var(--accent-color);
+  transform: translateY(-4px);
+}
+
+
 /* 按钮增强 */
 .enhanced-button {
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
+  border-radius: var(--border-radius);
 }
 
 .enhanced-button::before {
@@ -217,6 +314,34 @@ body {
   width: 300px;
   height: 300px;
 }
+
+/* 浅色模式按钮效果 */
+.light .enhanced-button {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.light .enhanced-button:hover {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+/* 深色模式按钮效果 */
+.dark .enhanced-button {
+  background: linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
+.dark .enhanced-button:hover {
+  background: linear-gradient(135deg, #4a4a4a 0%, #3a3a3a 100%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
 
 /* 徽章动画 */
 .badge-pulse {
@@ -271,6 +396,18 @@ body {
   border-radius: 4px;
 }
 
+/* 深色模式骨架屏 */
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    #2a2a2a 25%,
+    #3a3a3a 50%,
+    #2a2a2a 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
 /* 页面过渡 */
 .page-enter-active,
 .page-leave-active {
@@ -323,5 +460,366 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* 深色模式 Ant Design 组件样式 */
+.dark .ant-layout {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-content {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-sider {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-header {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-footer {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 深色模式表格样式 */
+.dark .ant-table {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-table-thead > tr > th {
+  background: #2d2d2d !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-table-tbody > tr {
+  background: var(--bg-card) !important;
+}
+
+.dark .ant-table-tbody > tr:hover {
+  background: #2d2d2d !important;
+}
+
+.dark .ant-table-tbody > tr > td {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* 深色模式空状态 */
+.dark .ant-empty {
+  color: var(--text-secondary) !important;
+}
+
+.dark .ant-empty-description {
+  color: var(--text-secondary) !important;
+}
+
+/* 深色模式选择框 */
+.dark .ant-select-selector {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-select-selection-item {
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-select-selection-placeholder {
+  color: var(--text-secondary) !important;
+}
+
+/* 深色模式强制覆盖所有选择框样式 */
+.dark [class*="ant-select"] .ant-select-selector {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark [class*="ant-select"] .ant-select-selection-item {
+  color: var(--text-primary) !important;
+}
+
+.dark [class*="ant-select"] .ant-select-selection-placeholder {
+  color: var(--text-secondary) !important;
+}
+
+.dark [class*="ant-select"] .ant-select-arrow {
+  color: var(--text-secondary) !important;
+}
+
+/* 深色模式选择框聚焦状态 */
+.dark .ant-select-focused .ant-select-selector {
+  background: var(--bg-card) !important;
+  border: 1px solid #1890ff !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* 深色模式选择框悬停状态 */
+.dark .ant-select:hover .ant-select-selector {
+  background: var(--bg-card) !important;
+  border: 1px solid #40a9ff !important;
+  color: var(--text-primary) !important;
+}
+
+/* 深色模式输入框 */
+.dark .ant-input {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-input::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+/* 深色模式下拉菜单 */
+.dark .ant-select-dropdown {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-select-item {
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-select-item:hover {
+  background: var(--bg-secondary) !important;
+}
+
+.dark .ant-select-item-option-selected {
+  background: #1890ff !important;
+  color: #fff !important;
+}
+
+/* 深色模式其他 Ant Design 组件 */
+.dark .ant-card {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-card-head {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-card-body {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-menu {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-menu-item {
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-menu-item:hover {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-menu-item-selected {
+  background: #1890ff !important;
+  color: #fff !important;
+}
+
+.dark .ant-menu-submenu {
+  background: var(--bg-secondary) !important;
+}
+
+.dark .ant-menu-submenu-title {
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-menu-submenu-title:hover {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-menu-submenu-popup {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-menu-submenu-popup .ant-menu-item {
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-menu-submenu-popup .ant-menu-item:hover {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 深色模式按钮组件 */
+.dark .ant-btn {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-btn:hover {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-btn-primary {
+  background: #1890ff !important;
+  color: #fff !important;
+  border: 1px solid #1890ff !important;
+}
+
+.dark .ant-btn-primary:hover {
+  background: #40a9ff !important;
+  color: #fff !important;
+  border: 1px solid #40a9ff !important;
+}
+
+/* 深色模式表单组件 */
+.dark .ant-form-item-label > label {
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-form-item-required::before {
+  color: #ff4d4f !important;
+}
+
+/* 深色模式分页组件 */
+.dark .ant-pagination {
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-pagination-item {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-pagination-item:hover {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-pagination-item-active {
+  background: #1890ff !important;
+  color: #fff !important;
+  border: 1px solid #1890ff !important;
+}
+
+.dark .ant-pagination-prev,
+.dark .ant-pagination-next {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark .ant-pagination-prev:hover,
+.dark .ant-pagination-next:hover {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* 深色模式强制覆盖 Ant Design 默认样式 */
+.dark .ant-layout,
+.dark .ant-layout * {
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-content {
+  background: var(--bg-primary) !important;
+}
+
+.dark .ant-layout-sider {
+  background: var(--bg-secondary) !important;
+}
+
+.dark .ant-layout-header {
+  background: var(--bg-secondary) !important;
+}
+
+/* 深色模式覆盖 Ant Design 的 CSS 变量 */
+.dark {
+  --ant-layout-bg: var(--bg-primary) !important;
+  --ant-layout-sider-bg: var(--bg-secondary) !important;
+  --ant-layout-header-bg: var(--bg-secondary) !important;
+  --ant-layout-content-bg: var(--bg-primary) !important;
+  --ant-layout-footer-bg: var(--bg-secondary) !important;
+}
+
+/* 深色模式覆盖 Ant Design 的全局样式 */
+.dark .ant-layout.ant-layout {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-content.ant-layout-content {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-sider.ant-layout-sider {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ant-layout-header.ant-layout-header {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 深色模式强制覆盖 Ant Design 的 CSS 类名 */
+.dark [class*="ant-layout"] {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark [class*="ant-layout-content"] {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark [class*="ant-layout-sider"] {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark [class*="ant-layout-header"] {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 深色模式覆盖 Ant Design 的 CSS 变量和属性 */
+.dark .ant-layout[style*="background"] {
+  background: var(--bg-primary) !important;
+}
+
+.dark .ant-layout-content[style*="background"] {
+  background: var(--bg-primary) !important;
+}
+
+.dark .ant-layout-sider[style*="background"] {
+  background: var(--bg-secondary) !important;
+}
+
+.dark .ant-layout-header[style*="background"] {
+  background: var(--bg-secondary) !important;
 }
 

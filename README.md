@@ -12,11 +12,14 @@
 - 🎨 **现代化 UI** - 基于 Nuxt 3 + Vue 3 + Ant Design Vue
 - ⚡ **Clash 订阅** - 一键导入 Clash，支持 50+ 国家节点筛选
 - 🚀 **V2Ray 订阅** - 支持 V2Ray 客户端，Base64 编码格式
+- 🔐 **安全订阅链接** - JWT加密的订阅链接，支持临时和永久链接
+- 📋 **订阅管理** - 统一管理所有生成的订阅链接，支持刷新和删除
 - 🔄 **实时监控** - 代理状态、爬取器状态实时展示
 - 📍 **地理位置** - 自动识别代理 IP 归属地（国家/城市）
 - 🛠️ **手动添加** - 支持手动添加自有代理
 - 🔐 **登录鉴权** - JWT Token 认证，保护管理接口安全
 - 🔒 **单实例运行** - 防止多实例冲突，确保数据一致性
+- ⚙️ **API管理** - 支持禁用/启用特定API接口，状态持久化保存
 
 ## 🚀 快速开始
 
@@ -30,9 +33,14 @@ cd ProxyPoolWithUI
 # 2. 安装依赖
 pip install -r requirements.txt
 
-# 3. 启动服务
+# 3. 配置安全设置（重要！）
+python setup_security.py
+
+# 4. 启动服务
 python main.py
 ```
+
+> **🔐 安全提示**: 首次运行前必须配置 JWT 密钥！运行 `python setup_security.py` 进行安全配置。
 
 ### 方式二：Docker 运行
 
@@ -146,6 +154,24 @@ curl -X POST http://localhost:5000/auth/change_password \
 |------|------|------|
 | `/v2ray` | 获取 V2Ray 订阅配置（Base64 编码） | `c`, `nc`, `protocol`, `limit` |
 
+### 安全订阅接口（需要认证）
+
+| 接口 | 说明 | 参数 |
+|------|------|------|
+| `/generate_subscription_links` | 生成加密的订阅链接 | `type`, `permanent`, `params` |
+| `/subscribe/clash` | 使用加密token获取Clash配置 | `token`, `params` |
+| `/subscribe/v2ray` | 使用加密token获取V2Ray配置 | `token`, `params` |
+| `/subscription_links` | 获取用户的订阅链接列表 | - |
+| `/subscription_links/<id>` | 删除指定订阅链接 | - |
+| `/subscription_links/<id>/refresh` | 刷新订阅链接（重新生成token） | - |
+
+### API接口管理（需要认证）
+
+| 接口 | 说明 | 参数 |
+|------|------|------|
+| `/api_status` | 获取所有API接口的启用状态 | - |
+| `/api_toggle/<path>` | 切换指定API的启用/禁用状态 | - |
+
 **参数说明：**
 - `c` - 按国家筛选（如：`c=CN,US,JP`）
 - `nc` - 排除指定国家（如：`nc=CN`）
@@ -218,6 +244,108 @@ http://localhost:5000/v2ray?protocol=socks5
 2. 复制返回的 Base64 编码内容
 3. 在 V2Ray 客户端中导入订阅
 
+## 🔐 安全订阅使用指南
+
+### 生成加密订阅链接
+
+1. 登录管理界面：http://localhost:5000/web
+2. 在首页点击「Clash 订阅」或「V2Ray 订阅」按钮
+3. 选择订阅类型：
+   - **临时链接**：1小时有效期，适合临时使用
+   - **永久链接**：永久有效，直到用户被删除
+4. 配置筛选参数（可选）：
+   - 国家筛选：选择特定国家
+   - 协议筛选：选择特定协议类型
+   - 数量限制：限制代理数量
+5. 点击「生成订阅链接」获取加密链接
+
+### 使用加密订阅链接
+
+**Clash 客户端：**
+1. 复制生成的加密链接
+2. 在 Clash 中添加订阅链接
+3. 客户端会自动使用加密链接获取配置
+
+**V2Ray 客户端：**
+1. 复制生成的加密链接
+2. 在 V2Ray 客户端中添加订阅
+3. 客户端会自动解析加密链接
+
+### 订阅管理
+
+1. 访问「订阅管理」页面
+2. 查看所有已生成的订阅链接
+3. 支持的操作：
+   - **复制链接**：快速复制订阅链接
+   - **刷新链接**：重新生成token（保持原参数）
+   - **删除链接**：删除不需要的订阅链接
+   - **批量操作**：支持批量复制、刷新、删除
+
+### 安全特性
+
+- **JWT 加密**：所有订阅链接使用 JWT 加密，确保安全性
+- **参数保护**：筛选参数被加密保护，无法被篡改
+- **用户隔离**：每个用户只能管理自己的订阅链接
+- **自动过期**：临时链接自动过期，避免长期暴露
+
+## ⚙️ API接口管理
+
+### 管理API接口状态
+
+系统支持禁用/启用特定的API接口，提供细粒度的接口控制。
+
+#### 访问管理界面
+
+1. 登录管理界面：http://localhost:5000/web
+2. 进入"API接口文档"页面
+3. 展开"API接口管理"面板
+
+#### 管理功能
+
+**单个接口管理：**
+- 使用开关控件启用/禁用单个API
+- 实时显示接口状态（绿色=启用，灰色=禁用）
+- 支持按路径和分类搜索接口
+
+**批量操作：**
+- 全部启用：一键启用所有API接口
+- 全部禁用：一键禁用所有API接口
+- 刷新状态：重新加载接口状态
+
+#### 接口分类
+
+- **认证接口**：登录、验证、修改密码等
+- **代理接口**：获取代理相关接口
+- **Clash接口**：Clash订阅相关接口
+- **V2Ray接口**：V2Ray订阅相关接口
+- **订阅接口**：安全订阅相关接口
+- **管理接口**：系统管理相关接口
+
+#### 状态持久化
+
+- API状态保存在 `api_status.json` 文件中
+- 重启服务后状态设置不会丢失
+- 支持手动编辑配置文件
+
+#### 安全特性
+
+- 禁用后的API返回403错误
+- 错误信息包含明确的禁用提示
+- 所有管理操作需要JWT认证
+
+#### 使用示例
+
+```bash
+# 获取所有API状态
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:5000/api_status
+
+# 禁用特定API
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" http://localhost:5000/api_toggle/fetch_random
+
+# 启用特定API
+curl -X POST -H "Authorization: Bearer YOUR_TOKEN" http://localhost:5000/api_toggle/fetch_random
+```
+
 ### 支持的 V2Ray 客户端
 
 - ✅ V2RayN (Windows)
@@ -287,13 +415,40 @@ ProxyPoolWithUI/
 ├── proc/             # 爬取和验证进程
 ├── frontend/         # Web 前端（Nuxt 3 + Vue 3）
 ├── utils/            # 工具类（IP 定位、单实例管理）
-├── config.py         # 配置文件
+├── data/             # 数据目录（数据库、配置文件等）
+│   ├── config.py     # 配置文件
+│   ├── data.db       # SQLite 数据库
+│   ├── users.json    # 用户数据
+│   ├── api_status.json # API接口状态配置
+│   └── sub.json      # 订阅链接存储
 └── main.py           # 启动入口
 ```
 
 ## ⚙️ 配置说明
 
-大部分配置在 `config.py` 中，默认配置已经可以适应大部分情况。
+大部分配置在 `data/config.py` 中，默认配置已经可以适应大部分情况。
+
+### 数据目录结构
+
+所有数据文件和配置文件统一存放在 `data/` 目录下：
+
+- **`data/config.py`** - 主配置文件，包含所有系统配置
+- **`data/data.db`** - SQLite 数据库文件，存储代理数据
+- **`data/users.json`** - 用户账户数据（用户名、密码哈希等）
+- **`data/api_status.json`** - API接口启用/禁用状态配置
+- **`data/sub.json`** - 生成的订阅链接存储
+
+### 数据备份
+
+建议定期备份 `data/` 目录，包含所有重要的运行时数据：
+
+```bash
+# 备份数据目录
+tar -czf proxypool_backup_$(date +%Y%m%d).tar.gz data/
+
+# 恢复数据目录
+tar -xzf proxypool_backup_20241019.tar.gz
+```
 
 ### 主要配置项
 
@@ -545,14 +700,16 @@ A: 不建议禁用认证。如果确实需要，可以在 `api/api.py` 中移除
 
 ### Q: API 接口需要认证吗？
 A: 
-- **需要认证**：所有管理接口（代理状态、爬取器管理、添加代理等）
+- **需要认证**：所有管理接口（代理状态、爬取器管理、添加代理、订阅管理等）
 - **无需认证**：代理获取接口（`/fetch_*`、`/clash*`、`/v2ray`）和健康检查（`/ping`）
+- **部分认证**：安全订阅接口（`/subscribe/clash`、`/subscribe/v2ray`）需要有效的JWT token
 
 ### Q: 支持哪些订阅格式？
 A: 
 - **Clash 订阅**：`/clash` - 返回 YAML 格式配置
 - **V2Ray 订阅**：`/v2ray` - 返回 Base64 编码的代理链接
 - **代理列表**：`/clash/proxies` - 仅返回 Clash 代理节点列表
+- **安全订阅**：`/subscribe/clash`、`/subscribe/v2ray` - 使用JWT token的加密订阅
 
 ### Q: 提示"检测到已有实例在运行"？
 A: 系统具备单实例保护机制。如果确定没有其他实例运行，可以手动清理锁文件：
@@ -573,6 +730,20 @@ export JWT_SECRET_KEY="your-very-strong-secret-key"
 python main.py
 ```
 
+### Q: 如何禁用特定的API接口？
+A: 有两种方式：
+1. **Web界面**：登录后进入"API接口文档"页面，展开"API接口管理"面板，使用开关控件管理
+2. **API调用**：使用 `/api_toggle/<path>` 接口切换状态
+
+### Q: API禁用状态保存在哪里？
+A: API状态保存在项目根目录的 `api_status.json` 文件中，重启服务后设置不会丢失。
+
+### Q: 禁用的API会返回什么错误？
+A: 禁用的API会返回403状态码，错误信息为：`API接口 <path> 已被禁用`。
+
+### Q: 如何批量管理API接口？
+A: 在API管理界面中，可以使用"全部启用"和"全部禁用"按钮进行批量操作。
+
 ## 🛠️ 技术栈
 
 **后端：**
@@ -591,6 +762,55 @@ python main.py
 - Ant Design Vue - UI 组件库
 - Vite - 构建工具
 - Axios - HTTP 客户端
+
+## 🔐 安全配置
+
+### JWT 密钥配置
+
+ProxyPool 使用 JWT Token 进行身份认证，**必须配置强密钥**以确保系统安全。
+
+#### 自动配置（推荐）
+
+```bash
+# 运行安全配置脚本，自动生成密钥并保存到 .env 文件
+python setup_security.py
+```
+
+#### 手动配置
+
+1. **创建 .env 文件**：
+   ```bash
+   # 生成强密钥
+   python -c "import secrets; print(secrets.token_urlsafe(32))"
+   
+   # 创建 .env 文件并添加密钥
+   echo "JWT_SECRET_KEY=your-generated-secret-key" > .env
+   ```
+
+2. **编辑 .env 文件**：
+   ```
+   JWT_SECRET_KEY=your-strong-secret-key-here
+   ```
+
+#### 安全要求
+
+- ✅ 密钥长度至少 32 字符
+- ✅ 使用随机生成的强密钥
+- ❌ 禁止使用弱密钥（如：admin123、password、secret）
+- ❌ 禁止将 .env 文件提交到版本控制
+
+#### 验证配置
+
+```bash
+# 检查配置是否正确
+python -c "from config import JWT_SECRET_KEY; print('密钥长度:', len(JWT_SECRET_KEY))"
+```
+
+### 默认账户
+
+- **用户名**: `admin`
+- **密码**: `admin123`
+- **⚠️ 重要**: 首次登录后请立即修改密码！
 
 ## 📝 开发贡献
 
@@ -613,13 +833,25 @@ python main.py
 
 ---
 
-**版本**: 2.0.1  
-**更新时间**: 2025-10-18  
+**版本**: 2.0.2  
+**更新时间**: 2025-10-19  
 **状态**: ✅ 生产就绪
 
 ## 🔄 更新日志
 
-### v2.0.1 (2025-10-18)
+### v2.0.2 (2025-10-19)
+- 🔐 新增安全订阅链接功能
+- 📋 订阅管理界面，支持链接的生成、刷新、删除
+- 🔑 JWT加密的订阅链接，支持临时和永久链接
+- 🛡️ 订阅参数加密保护，防止篡改
+- 👥 用户隔离的订阅链接管理
+- ⚙️ API接口管理功能，支持禁用/启用特定接口
+- 💾 API状态持久化保存，重启后设置不丢失
+- 🎨 优化前端界面，新增订阅管理和API管理页面
+- 📁 重构数据目录结构，统一管理配置和数据文件
+- 🧹 移除过时文档，优化项目结构
+
+### v2.0.1 (2025-10-19)
 - ✨ 新增 JWT Token 登录鉴权功能
 - 🔐 所有管理接口添加认证保护
 - 👤 用户管理：登录、修改密码

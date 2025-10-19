@@ -29,10 +29,6 @@
               <div class="stat-label">当前可用代理</div>
               <div class="stat-value">{{ validatedProxiesCnt.toLocaleString() }}</div>
             </div>
-            <div class="stat-badge" v-if="validatedProxiesCnt > 0">
-              <span class="status-indicator online"></span>
-              在线
-            </div>
           </div>
         </div>
             </a-col>
@@ -216,7 +212,7 @@
           <a-button 
             type="default" 
             size="small"
-            @click="copyClashSubscription"
+            @click="showSubscriptionModal('clash')"
             class="clash-btn"
           >
             <CopyOutlined />
@@ -227,7 +223,7 @@
           <a-button 
             type="default" 
             size="small"
-            @click="copyV2RaySubscription"
+            @click="showSubscriptionModal('v2ray')"
             class="v2ray-btn"
           >
             <CopyOutlined />
@@ -485,6 +481,51 @@
         </a-table>
     </div>
     </div>
+
+    <!-- 订阅链接选择弹窗 -->
+    <a-modal
+      v-model:open="subscriptionModalVisible"
+      :title="subscriptionModalTitle"
+      width="500px"
+      @ok="handleGenerateSubscription"
+      @cancel="handleCancelSubscription"
+      :confirmLoading="subscriptionLoading"
+      :okText="'生成订阅链接'"
+      :cancelText="'取消'"
+    >
+      <div class="subscription-modal-content">
+        <a-radio-group v-model:value="selectedSubscriptionType" class="subscription-type-group">
+          <a-radio value="temporary" class="subscription-radio">
+            <div class="radio-content">
+              <div class="radio-title">
+                <ClockCircleOutlined />
+                临时链接
+              </div>
+              <div class="radio-desc">有效期1小时，适合临时测试使用</div>
+            </div>
+          </a-radio>
+          
+          <a-radio value="permanent" class="subscription-radio">
+            <div class="radio-content">
+              <div class="radio-title">
+                <ThunderboltOutlined />
+                永久链接
+              </div>
+              <div class="radio-desc">永久有效，适合长期使用（用户被删除后自动失效）</div>
+            </div>
+          </a-radio>
+        </a-radio-group>
+        
+        <div class="subscription-options">
+          <a-checkbox v-model:checked="includeAllCountries" class="option-checkbox">
+            包含所有国家
+          </a-checkbox>
+          <a-checkbox v-model:checked="includeAllProtocols" class="option-checkbox">
+            包含所有协议
+          </a-checkbox>
+        </div>
+      </div>
+    </a-modal>
 </template>
 
 <script setup lang="ts">
@@ -517,6 +558,8 @@ const proxies = ref<any[]>([])
 const sumProxiesCnt = ref(0)
 const validatedProxiesCnt = ref(0)
 const pendingProxiesCnt = ref(0)
+
+// 后端连接状态现在由右侧菜单统一管理
 const autoupdate = ref(true)
 const lastupdate = ref('')
 const loading = ref(false)
@@ -543,6 +586,15 @@ const addForm = ref({
   country: '',
   address: ''
 })
+
+// 订阅弹窗相关
+const subscriptionModalVisible = ref(false)
+const subscriptionLoading = ref(false)
+const subscriptionModalTitle = ref('')
+const selectedSubscriptionType = ref('temporary')
+const includeAllCountries = ref(true)
+const includeAllProtocols = ref(true)
+const currentSubscriptionType = ref('') // 当前选择的订阅类型：clash 或 v2ray
 
 const pagination = ref({
   current: 1,
@@ -941,6 +993,179 @@ const copyV2RaySubscription = async () => {
   }
 }
 
+// 显示订阅弹窗
+const showSubscriptionModal = (type: 'clash' | 'v2ray') => {
+  currentSubscriptionType.value = type
+  subscriptionModalTitle.value = `生成 ${type.toUpperCase()} 订阅链接`
+  selectedSubscriptionType.value = 'temporary' // 默认选择临时链接
+  subscriptionModalVisible.value = true
+}
+
+// 生成订阅链接
+const handleGenerateSubscription = async () => {
+  try {
+    subscriptionLoading.value = true
+    
+    const token = localStorage.getItem('token')
+    if (!token) {
+      message.error('请先登录')
+      return
+    }
+    
+    const permanent = selectedSubscriptionType.value === 'permanent'
+    const type = currentSubscriptionType.value
+    
+    // 构建参数
+    const params: any = {}
+    if (!includeAllCountries.value) {
+      // 可以根据当前筛选条件设置国家参数
+      if (searchCountry.value) {
+        params.c = searchCountry.value.toUpperCase()
+      }
+    }
+    if (!includeAllProtocols.value) {
+      // 可以根据当前筛选条件设置协议参数
+      if (filterProtocol.value) {
+        params.protocol = filterProtocol.value
+      }
+    }
+    
+    // 构建完整的API URL
+    const config = useRuntimeConfig()
+    const baseURL = config.public.apiBase as string
+    const apiUrl = `${baseURL}/generate_subscription_links`
+    
+    console.log('请求URL:', apiUrl)
+    console.log('请求参数:', {
+      type: type,
+      permanent: permanent,
+      params: params
+    })
+    console.log('Token:', token ? '已获取' : '未获取')
+    
+    // 添加重试机制
+    let retryCount = 0
+    const maxRetries = 3
+    let response: Response | undefined
+    
+    while (retryCount < maxRetries) {
+      try {
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            type: type,
+            permanent: permanent,
+            params: params
+          })
+        })
+        
+        console.log(`第${retryCount + 1}次请求响应状态:`, response.status)
+        console.log('响应头:', response.headers)
+        
+        // 检查响应内容类型
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const responseText = await response.text()
+          console.error(`第${retryCount + 1}次请求返回非JSON响应:`, responseText)
+          
+          if (retryCount < maxRetries - 1) {
+            retryCount++
+            console.log(`等待1秒后重试... (${retryCount}/${maxRetries})`)
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            continue
+          } else {
+            message.error('API服务器返回了非JSON响应，请检查服务器状态')
+            return
+          }
+        }
+        
+        // 如果响应是JSON格式，跳出重试循环
+        break
+        
+      } catch (fetchError) {
+        console.error(`第${retryCount + 1}次请求失败:`, fetchError)
+        
+        if (retryCount < maxRetries - 1) {
+          retryCount++
+          console.log(`等待1秒后重试... (${retryCount}/${maxRetries})`)
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          continue
+        } else {
+          throw fetchError
+        }
+      }
+    }
+    
+    if (!response) {
+      message.error('无法连接到API服务器，请检查服务器状态')
+      return
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('API错误响应:', errorText)
+      message.error(`API请求失败: ${response.status} ${response.statusText}`)
+      return
+    }
+    
+    const data = await response.json()
+    console.log('API响应数据:', data)
+    
+    if (data.success) {
+      const link = data.links[type]
+      if (link) {
+        // 订阅链接已自动保存到服务器 sub.json 文件
+        
+        // 使用 Clipboard API 复制
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(link)
+          const linkType = permanent ? '永久' : '临时'
+          message.success(`${type.toUpperCase()} ${linkType}订阅链接已复制到剪贴板！`)
+        } else {
+          // 降级方案：使用传统的复制方法
+          const textArea = document.createElement('textarea')
+          textArea.value = link
+          textArea.style.position = 'fixed'
+          textArea.style.left = '-999999px'
+          document.body.appendChild(textArea)
+          textArea.select()
+          try {
+            document.execCommand('copy')
+            const linkType = permanent ? '永久' : '临时'
+            message.success(`${type.toUpperCase()} ${linkType}订阅链接已复制到剪贴板！`)
+          } catch (err) {
+            message.error('复制失败，请手动复制：' + link)
+            console.error('复制失败:', err)
+          }
+          document.body.removeChild(textArea)
+        }
+        subscriptionModalVisible.value = false
+      } else {
+        message.error('生成订阅链接失败：未返回链接')
+      }
+    } else {
+      message.error(data.message || '生成订阅链接失败')
+    }
+  } catch (error) {
+    console.error('生成订阅链接失败:', error)
+    message.error('生成订阅链接失败，请稍后重试')
+  } finally {
+    subscriptionLoading.value = false
+  }
+}
+
+// 取消订阅弹窗
+const handleCancelSubscription = () => {
+  subscriptionModalVisible.value = false
+  currentSubscriptionType.value = ''
+}
+
+// 订阅链接现在保存到服务器的 sub.json 文件中
+
 // 新增代理
 const handleAddProxy = async () => {
   // 验证必填项
@@ -1090,6 +1315,8 @@ const columns = [
     fixed: 'right'
   }
 ]
+
+// 后端状态检测现在由右侧菜单统一管理
 
 const update = async () => {
   loading.value = true
@@ -1399,6 +1626,11 @@ onUnmounted(() => {
   border-bottom: 2px solid #f0f0f0;
 }
 
+/* 深色模式表格头部 */
+.dark .table-header {
+  border-bottom: 2px solid var(--border-color);
+}
+
 .table-title {
   margin: 0;
   font-size: 20px;
@@ -1407,6 +1639,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   color: rgba(0, 0, 0, 0.85);
+}
+
+/* 深色模式表格标题 */
+.dark .table-title {
+  color: var(--text-primary);
 }
 
 .proxy-count {
@@ -1429,6 +1666,13 @@ onUnmounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* 深色模式搜索筛选区域 */
+.dark .search-filters-container {
+  background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
 .filter-space {
   width: 100%;
 }
@@ -1440,6 +1684,60 @@ onUnmounted(() => {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* 深色模式筛选选择框 */
+.dark .filter-select :deep(.ant-select-selector) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .filter-select :deep(.ant-select-selection-item) {
+  color: var(--text-primary) !important;
+}
+
+.dark .filter-select :deep(.ant-select-selection-placeholder) {
+  color: var(--text-secondary) !important;
+}
+
+/* 深色模式强制覆盖所有选择框 */
+.dark :deep(.ant-select-selector) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark :deep(.ant-select-selection-item) {
+  color: var(--text-primary) !important;
+}
+
+.dark :deep(.ant-select-selection-placeholder) {
+  color: var(--text-secondary) !important;
+}
+
+.dark :deep(.ant-select-arrow) {
+  color: var(--text-secondary) !important;
+}
+
+/* 深色模式选择框下拉菜单 */
+.dark :deep(.ant-select-dropdown) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.dark :deep(.ant-select-item) {
+  color: var(--text-primary) !important;
+}
+
+.dark :deep(.ant-select-item:hover) {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark :deep(.ant-select-item-option-selected) {
+  background: #1890ff !important;
+  color: #fff !important;
 }
 
 .filter-select :deep(.ant-select-selector:hover) {
@@ -1473,6 +1771,17 @@ onUnmounted(() => {
   border-radius: 6px !important;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* 深色模式输入框 */
+.dark .filter-input :deep(.ant-input) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .filter-input :deep(.ant-input::placeholder) {
+  color: var(--text-secondary) !important;
 }
 
 
@@ -1562,30 +1871,118 @@ onUnmounted(() => {
 /* 现代化表格 */
 .modern-table :deep(.ant-table) {
   font-size: 13px;
+  background: var(--bg-card);
+  border-radius: var(--border-radius);
+  overflow: hidden;
 }
 
 .modern-table :deep(.ant-table-thead > tr > th) {
-  background: #fafafa;
-  color: rgba(0, 0, 0, 0.85);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-weight: 600;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid var(--border-color);
   padding: 8px 12px;
   height: 40px;
 }
 
 .modern-table :deep(.ant-table-tbody > tr) {
   transition: all 0.3s;
+  background: var(--bg-card);
 }
 
 .modern-table :deep(.ant-table-tbody > tr:hover) {
-  background: #fafafa;
+  background: var(--bg-secondary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .modern-table :deep(.ant-table-tbody > tr > td) {
   padding: 6px 12px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border-color);
   height: 45px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+/* 深色模式表格样式 */
+.dark .modern-table :deep(.ant-table) {
+  background: var(--bg-card);
+}
+
+.dark .modern-table :deep(.ant-table-thead > tr > th) {
+  background: #2d2d2d;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.dark .modern-table :deep(.ant-table-tbody > tr) {
+  background: var(--bg-card);
+}
+
+.dark .modern-table :deep(.ant-table-tbody > tr:hover) {
+  background: #2d2d2d;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark .modern-table :deep(.ant-table-tbody > tr > td) {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* 表格空状态样式 */
+.dark .modern-table :deep(.ant-empty) {
+  color: var(--text-secondary);
+}
+
+/* 状态指示器样式 */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-indicator.online {
+  background: #52c41a;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.3);
+}
+
+.status-indicator.offline {
+  background: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.3);
+}
+
+.status-indicator.checking {
+  background: #faad14;
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.3);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.status-error {
+  font-size: 12px;
+  color: #ff4d4f;
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+/* 深色模式状态错误 */
+.dark .status-error {
+  color: #ff7875;
+}
+
+.dark .modern-table :deep(.ant-empty-description) {
+  color: var(--text-secondary);
 }
 
 .modern-table :deep(.ant-tag) {
@@ -1599,11 +1996,20 @@ onUnmounted(() => {
 /* 特殊样式 */
 .ip-code {
   font-family: 'Courier New', monospace;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   padding: 1px 6px;
   border-radius: 3px;
   font-size: 12px;
   line-height: 20px;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* 深色模式下的特殊样式 */
+.dark .ip-code {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 /* 国家信息样式 */
@@ -1624,10 +2030,20 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
+/* 深色模式国家信息 */
+.dark .country-name {
+  color: var(--text-secondary);
+}
+
 /* 地址文本样式 */
 .address-text {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.65);
+}
+
+/* 深色模式地址文本 */
+.dark .address-text {
+  color: var(--text-secondary);
   display: inline-block;
   max-width: 180px;
   overflow: hidden;
@@ -1827,5 +2243,73 @@ onUnmounted(() => {
 
 .v2ray-btn:hover .anticon {
   transform: scale(1.1);
+}
+
+/* 订阅弹窗样式 */
+.subscription-modal-content {
+  padding: 16px 0;
+}
+
+.subscription-alert {
+  margin-bottom: 24px;
+}
+
+.subscription-type-group {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.subscription-radio {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.subscription-radio:hover {
+  border-color: #1890ff;
+  background-color: #f6ffed;
+}
+
+.subscription-radio.ant-radio-wrapper-checked {
+  border-color: #1890ff;
+  background-color: #e6f7ff;
+}
+
+.radio-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radio-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.radio-desc {
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.subscription-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.option-checkbox {
+  margin: 0;
 }
 </style>

@@ -28,8 +28,28 @@ class Item:
 def main():
     global instance_manager
     
+    # 启动安全检查
+    print("🔐 启动 ProxyPool 管理系统...")
+    print("=" * 60)
+    
+    # 检查JWT密钥配置
+    try:
+        from data.config import JWT_SECRET_KEY, print_security_setup_guide
+        print("✅ JWT密钥配置检查通过")
+        print(f"✅ 密钥长度: {len(JWT_SECRET_KEY)} 字符")
+    except ValueError as e:
+        print(f"❌ 安全配置错误: {e}")
+        print_security_setup_guide()
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ 配置加载失败: {e}")
+        print_security_setup_guide()
+        sys.exit(1)
+    
+    print("=" * 60)
+    
     # 检查单实例运行
-    print("启动 ProxyPool 管理系统...")
+    print("🔒 检查单实例运行...")
     
     # 创建单实例管理器
     from utils.single_instance import SingleInstanceManager

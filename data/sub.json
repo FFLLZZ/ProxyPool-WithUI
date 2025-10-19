@@ -1,0 +1,24 @@
+{
+  "subscriptions": [
+    {
+      "id": "sub_1760852672088_clash",
+      "username": "admin",
+      "type": "clash",
+      "url": "http://localhost:5000/subscribe/clash?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwicGFyYW1zIjp7fSwicGVybWFuZW50IjpmYWxzZSwiZXhwIjoxNzYwODU2MzIxfQ.OMxNjrwR5zLZ3DxWh3StPfSi517a0XBbrUnDaUYVyts&params=e30=",
+      "created_at": "2025-10-19 13:45:21",
+      "permanent": false,
+      "expires_at": "2025-10-19 14:45:21",
+      "params": {}
+    },
+    {
+      "id": "sub_1760855152524_clash",
+      "username": "admin",
+      "type": "clash",
+      "url": "http://localhost:5000/subscribe/clash?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwicGFyYW1zIjp7fSwicGVybWFuZW50IjpmYWxzZSwiZXhwIjoxNzYwODU4NzUyLCJpYXQiOjE3NjA4NTUxNTJ9.vPrPMHc2KRMZCgwzfO9mMRoIheGzJ2re3C1aVHM16uA&params=e30%3D",
+      "created_at": "2025-10-19 14:25:52",
+      "permanent": false,
+      "expires_at": "2025-10-19 15:25:52",
+      "params": {}
+    }
+  ]
+}

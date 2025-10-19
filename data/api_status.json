@@ -1,0 +1,36 @@
+{
+  "auth": {
+    "/auth/login": true,
+    "/auth/verify": true,
+    "/auth/change_password": true
+  },
+  "proxy": {
+    "/fetch_random": true,
+    "/fetch_all": true,
+    "/fetch_http": true,
+    "/fetch_https": true,
+    "/fetch_socks4": true,
+    "/fetch_socks5": true
+  },
+  "clash": {
+    "/clash": true,
+    "/clash/proxies": true
+  },
+  "v2ray": {
+    "/v2ray": true
+  },
+  "subscription": {
+    "/generate_subscription_links": true,
+    "/subscribe/clash": true,
+    "/subscribe/v2ray": true,
+    "/subscription_links": true
+  },
+  "management": {
+    "/proxies_status": true,
+    "/fetchers_status": true,
+    "/add_proxy": true,
+    "/delete_proxy": true,
+    "/fetcher_enable": true,
+    "/ping": true
+  }
+}
