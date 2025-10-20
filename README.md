@@ -51,7 +51,7 @@ python main.py
 docker run -d \
   --name proxy-pool \
   -p 5000:5000 \
-  private-proxypool-server:latest
+  ghcr.io/huppugo1/proxypoolwithui:latest
 ```
 > ⚠️ **注意**: 容器删除后数据会丢失，仅适用于测试
 
@@ -61,7 +61,7 @@ docker run -d \
   --name proxy-pool \
   -p 5000:5000 \
   -v $(pwd)/data:/proxy/data \
-  private-proxypool-server:latest
+  ghcr.io/huppugo1/proxypoolwithui:latest
 ```
 
 #### 数据持久化配置
@@ -76,7 +76,7 @@ docker run -d \
   --name proxy-pool \
   -p 5000:5000 \
   -v /home/yourusername/proxy-data:/proxy/data \
-  private-proxypool-server:latest
+  ghcr.io/huppugo1/proxypoolwithui:latest
 ```
 > ✅ **优势**: 路径明确，便于管理和备份
 
@@ -93,7 +93,7 @@ docker run -d \
   --name proxy-pool \
   -p 5000:5000 \
   -v ./data:/proxy/data \
-  private-proxypool-server:latest
+  ghcr.io/huppugo1/proxypoolwithui:latest
 ```
 > ✅ **优势**: 便于项目迁移，路径相对简单
 
@@ -103,7 +103,7 @@ docker run -d \
   --name proxy-pool \
   -p 5000:5000 \
   -v proxy-data:/proxy/data \
-  private-proxypool-server:latest
+  ghcr.io/huppugo1/proxypoolwithui:latest
 ```
 > ✅ **优势**: Docker自动管理，适合生产环境
 
@@ -121,7 +121,7 @@ docker run -d \
   --restart unless-stopped \
   --memory=512m \
   --cpus=1.0 \
-  private-proxypool-server:latest
+  ghcr.io/huppugo1/proxypoolwithui:latest
 
 # 3. 验证部署
 echo "等待服务启动..."
